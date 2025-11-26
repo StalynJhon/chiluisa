@@ -51,7 +51,7 @@ HTML_HOME = """
 <body>
 
 <div class="container">
-    <h1>Tabla de Multiplicación</h1>
+    <h1>Jonathan Chisaguano</h1>
 
     <form method="GET">
         <input type="number" name="n" placeholder="Ingresa un número" required>

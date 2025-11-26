@@ -43,10 +43,12 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/stalynjhon/chiluisa:1.0.5
+          tags: |
+            ghcr.io/stalynjhon/chiluisa:latest
+            ghcr.io/stalynjhon/chiluisa:${{ github.run_number }}
 
       - name: Verify image build
-        run: docker images ghcr.io/stalynjhon/chiluisa:1.0.5
+        run: docker images ghcr.io/stalynjhon/chiluisa
 
       - name: Probar conexión SSH
         uses: appleboy/ssh-action@v1
@@ -56,7 +58,6 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
-            echo "Conexión exitosa desde GitHub Actions"
             hostname
             whoami
             uptime
@@ -79,9 +80,8 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
-            echo "Desplegando servicios"
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/stalynjhon/chiluisa:1.0.5
+            docker pull ghcr.io/stalynjhon/chiluisa:latest
             docker stack rm curipallo || true
             sleep 30
             docker stack deploy -c /home/${{ secrets.VPS_USER }}/despliegue/stack.yml --with-registry-auth curipallo

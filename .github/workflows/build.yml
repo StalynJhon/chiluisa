@@ -44,7 +44,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/angel0314ist/practica:1.0.5
+            ghcr.io/stalynjhon/chiluisa:1.0.5
 
       - name: Verify image build
         run: docker images ghcr.io/angel0314ist/practica:1.0.5

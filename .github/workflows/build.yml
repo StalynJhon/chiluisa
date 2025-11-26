@@ -1,4 +1,4 @@
-name: Build & Push Flask App
+name: Build & Publish Python Package
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,65 +23,20 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install build tools
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip setuptools wheel twine
 
-      - name: Run tests
-        run: pytest -q test.py
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
+      - name: Publish package to GitHub Packages
+        env:
+          TWINE_USERNAME: ${{ github.actor }}
+          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
 
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/stalynjhon/chiluisa:latest
-            ghcr.io/stalynjhon/chiluisa:${{ github.run_number }}
-
-      - name: Verify image build
-        run: docker images ghcr.io/stalynjhon/chiluisa
-
-      - name: Probar conexión SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            hostname
-            whoami
-            uptime
-
-      - name: Pasar el stack.yml al servidor
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "stack.yml"
-          target: "/home/${{ secrets.VPS_USER }}/despliegue"
-
-      - name: Despliegue de los servicios
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/stalynjhon/chiluisa:latest
-            docker stack rm curipallo || true
-            sleep 30
-            docker stack deploy -c /home/${{ secrets.VPS_USER }}/despliegue/stack.yml --with-registry-auth curipallo
+      - name: Verify package files
+        run: ls -l dist/

@@ -36,26 +36,17 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_PAT }}
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/stalynjhon/chiluisa:1.0.5
+          tags: ghcr.io/stalynjhon/chiluisa:1.0.5
 
       - name: Verify image build
-        run: docker images ghcr.io/angel0314ist/practica:1.0.5
-
-      - name: Mostrar variables básicas (solo locales, no secretos)
-        run: |
-          echo "Probando conexión SSH con:"
-          echo "Host: ${{ secrets.VPS_HOST }}"
-          echo "Usuario: ${{ secrets.VPS_USER }}"
-          echo "Puerto: ${{ secrets.VPS_SSH_PORT }}"
-          echo "Password: ${{ secrets.VPS_PASSWORD }}"
+        run: docker images ghcr.io/stalynjhon/chiluisa:1.0.5
 
       - name: Probar conexión SSH
         uses: appleboy/ssh-action@v1
@@ -89,10 +80,8 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             echo "Desplegando servicios"
-            echo "==> descargando la imagen del GHCR"
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u angel0314ist --password-stdin
-            docker pull ghcr.io/angel0314ist/practica:1.0.5
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker pull ghcr.io/stalynjhon/chiluisa:1.0.5
             docker stack rm curipallo || true
             sleep 30
-            echo "==> Desplegando stack..."
             docker stack deploy -c /home/${{ secrets.VPS_USER }}/despliegue/stack.yml --with-registry-auth curipallo
